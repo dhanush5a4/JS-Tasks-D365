@@ -333,3 +333,109 @@ debugger;
         filterParentProjectLookup(executionContext);
     });
 }
+
+//change form on option change
+function CallMethodToChangeForm(executionContext)
+{
+	//Generating Form Context
+	var formContext = executionContext.getFormContext();
+	//Retrieving Field Data
+	var FieldValue = formContext.getAttribute("it_changeform").getText();
+	var currentForm = formContext.ui.formSelector.getCurrentItem();
+	//alert(FieldValue);
+	alert(currentForm.getLabel().toLowerCase())
+	ChangeForm(FieldValue, formContext);
+}
+
+function ChangeForm(FieldValue, formContext)
+{
+	//Retrieve Current Form
+	var currentForm = formContext.ui.formSelector.getCurrentItem();
+	//Retrieve Available Forms
+	var availableForms = formContext.ui.formSelector.items.get();
+	if (currentForm.getLabel().toLowerCase() != FieldValue.toLowerCase())
+	{
+		//Looping Through Available Forms
+		for (var i in availableForms)
+		{
+			var form = availableForms[i];
+			if (form.getLabel().toLowerCase() == FieldValue.toLowerCase())
+			{
+				//Programmatically Changing The Form Using "navigate" Client API
+				form.navigate();
+				return true;
+			}
+		}
+	}
+}
+
+//BPF change on form change
+function formBasedBPF(executionContext)
+{
+	debugger;
+	var formType = Xrm.Page.ui.getFormType();
+	
+	formContext = executionContext.getFormContext();
+	
+	var formName = Xrm.Page.ui.formSelector.getCurrentItem().getLabel();
+	
+	var activeProcess = Xrm.Page.data.process.getActiveProcess();
+
+	if (activeProcess.getId() != null)
+	{
+		var activeProcessID = activeProcess.getId();
+		if (formType != 1 && formName == "Project main form" && activeProcessID.toUpperCase()!== "2A723D33-EE52-EF11-BFE3-000D3AF2A6F6")
+	
+		{
+			formContext.data.process.setActiveProcess("2A723D33-EE52-EF11-BFE3-000D3AF2A6F6", "success");
+		}
+		else if (formName == "Information Main Form" && activeProcessID.toUpperCase() != "E2CE1127-634E-EF11-ACCD-000D3AF2A6F6")
+		
+		{
+			formContext.data.process.setActiveProcess("E2CE1127-634E-EF11-ACCD-000D3AF2A6F6", "success");
+		}
+	}
+}
+
+
+//BPF change on one entity
+function MoveBPFStage(executionContext) {
+    debugger;
+    var formContext = executionContext.getFormContext();
+
+    var activeStage = formContext.data.process.getActiveStage();
+    var stageId = activeStage.getId();
+    var stageName = activeStage.getName();
+    var currentBPFInstanceID = formContext.data.process.getInstanceId();
+    var email = formContext.getAttribute("emailaddress1").getValue();
+
+    if (email !== undefined && email !== "") {
+        // Stage2 ID – bfc9108c-8389-406b-9166-2c3298a2e41f
+        if (stageName !== null && stageName === "Qualify") {
+            var Stage2 = "3a275c22-fc45-4e89-97fc-41e5ec578743";
+            var entity = {};
+            entity["activestageid@odata.bind"] = "/processstages(" + Stage2 + ")";
+            entity["traversedpath"] = stageId + "," + Stage2;
+
+            var req = new XMLHttpRequest();
+            req.open("PATCH", Xrm.Page.context.getClientUrl() + "/api/data/v9.0/leadtoopportunitysalesprocess(" + currentBPFInstanceID + ")", true);
+            req.setRequestHeader("OData-MaxVersion", "4.0");
+            req.setRequestHeader("OData-Version", "4.0");
+            req.setRequestHeader("Accept", "application/json");
+            req.setRequestHeader("Content-Type", "application/json; charset=utf-8");
+            req.onreadystatechange = function () {
+                if (this.readyState === 4) {
+                    req.onreadystatechange = null;
+                    if (this.status === 204) {
+                        // Success – No Return Data – Do Something
+                        alert("Success");
+                    } else {
+                        alert("Error");
+                        Xrm.Utility.alertDialog(this.statusText);
+                    }
+                }
+            };
+            req.send(JSON.stringify(entity));
+        }
+    }
+}
