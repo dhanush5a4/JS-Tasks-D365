@@ -439,3 +439,43 @@ function MoveBPFStage(executionContext) {
         }
     }
 }
+
+//PArty lookup Filter
+function filterPartyLookup(executionContext)
+{
+	var formContext = executionContext.getFormContext();
+	// Get the value of the "Preferred Method of Contact" field
+	var preferredMethod = formContext.getAttribute("preferredcontactmethodcode").getValue();
+	// Define the FetchXML filter based on preferred method
+	var fetchXML = "";
+	var entityTypes = [];
+	if (preferredMethod == 2)
+	{ // If preferred method is 'Mail'
+		fetchXML = "<filter type='and'><condition attribute='contactid' operator='not-null' /></filter>";
+		entityTypes = ["contact"];
+	}
+	else if (preferredMethod == 3)
+	{ // If preferred method is 'Phone'
+		fetchXML = "<filter type='and'><condition attribute='accountid' operator='not-null' /></filter>";
+		entityTypes = ["account"];
+	}
+	else if (preferredMethod == 1 || 4 || 5)
+	{
+		// If no preferred method is selected, show both
+		entityTypes = ["contact", "account"];
+	}
+	// Apply the custom filter to the 'Account Name' lookup field
+	var partyListControl = formContext.getControl("parentcustomerid");
+	partyListControl.addCustomFilter(fetchXML);
+	partyListControl.setEntityTypes(entityTypes);
+}
+
+function addPreSearchToPartyLookup(executionContext)
+{
+	debugger;
+	var formContext = executionContext.getFormContext();
+	formContext.getControl("parentcustomerid").addPreSearch(function ()
+	{
+		filterPartyLookup(executionContext);
+	});
+}
